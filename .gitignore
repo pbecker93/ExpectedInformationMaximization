@@ -1,0 +1,8 @@
+.idea
+venv
+*/*/__pycache__
+*/*/*/__pycache__
+
+CppEIM/build
+CppEIM/dist
+CppEIM/pybind11
