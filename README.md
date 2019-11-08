@@ -1,9 +1,9 @@
-#Expected Information Maximization
+# Expected Information Maximization
 Code for "Expected Information Maximization: Using the I-Projection for Mixture Density Estimation" - currently under
 review for ICLR 2020, see https://openreview.net/forum?id=ByglLlHFDS
 
 
-###Code Structure
+### Code Structure
 Parts of the Code, especially for the Gaussian Mixture Model case are written in C++ for performance reasons. The main
 loop is in python and  interfaces are provided using pybind11. An installation guide for the C++ part can be found below.
 
