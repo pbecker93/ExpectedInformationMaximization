@@ -1,6 +1,5 @@
 # Expected Information Maximization
-Code for "Expected Information Maximization: Using the I-Projection for Mixture Density Estimation" - currently under
-review for ICLR 2020, see https://openreview.net/forum?id=ByglLlHFDS
+Code for "Expected Information Maximization: Using the I-Projection for Mixture Density Estimation" - published at ICLR 2020, see https://openreview.net/forum?id=ByglLlHFDS
 
 
 ### Code Structure
