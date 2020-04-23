@@ -35,7 +35,7 @@ recorder_dict = {
 }
 
 # Set 'plot_realtime' to True for some nice visualization
-recorder = Recorder(recorder_dict, plot_realtime=True, save=False)
+recorder = Recorder(recorder_dict, plot_realtime=False, save=False)
 
 """Running the algorithm """
 

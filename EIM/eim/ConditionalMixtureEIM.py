@@ -1,4 +1,4 @@
-from distributions.GaussianEMM import GaussianEMM
+from distributions.conditional.GaussianEMM import GaussianEMM
 from recording.Recorder import Recorder
 import tensorflow as tf
 from tensorflow import keras as k

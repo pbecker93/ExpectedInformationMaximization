@@ -1,4 +1,3 @@
-from cpp_model_learner import GMMLearner
 from tensorflow import keras as k
 import numpy as np
 from util.ConfigDict import ConfigDict
@@ -6,6 +5,12 @@ from recording.Recorder import RecorderKeys as rec
 from eim.DensityRatioEstimator import DensityRatioEstimator, AddFeatDensityRatioEstimator
 from util.NetworkBuilder import NetworkKeys
 import util.ModelInit as model_init
+from itps.MoreGaussian import MoreGaussian
+from itps.RepsCategorical import RepsCategorical
+from distributions.marginal.GMM import GMM
+from distributions.marginal.Categorical import Categorical
+from distributions.marginal.Gaussian import Gaussian
+from util.Regression import QuadFunc
 
 
 class MarginalMixtureEIM:
@@ -40,10 +45,12 @@ class MarginalMixtureEIM:
         # build model
         w, m, c = model_init.gmm_init(self.c.initialization, np.array(train_samples, dtype=np.float32),
                                       self.c.num_components, seed=0)
-        self._gmm_learner = GMMLearner(dim=m.shape[-1], num_components=self.c.num_components,
-                                       surrogate_reg_fact=1e-10, seed=seed,
-                                       eta_offset=1.0, omega_offset=0.0, constrain_entropy=False)
-        self._gmm_learner.initialize_model(w.astype(np.float64), m.astype(np.float64), c.astype(np.float64))
+        self._model = GMM(w, m, c)
+
+        self._components_learners = []
+        for i in range(self._model.num_components):
+            self._components_learners.append(MoreGaussian(m.shape[-1], 1.0, 0.0, False))
+        self._weight_learner = RepsCategorical(1.0, 0.0, False)
 
         # build density ratio estimator
         dre_params = {NetworkKeys.NUM_UNITS: self.c.dre_hidden_layers,
@@ -71,7 +78,7 @@ class MarginalMixtureEIM:
 
     @property
     def model(self):
-        return self._gmm_learner.model
+        return self._model
 
     def train(self):
         for i in range(self.c.train_epochs):
@@ -105,20 +112,49 @@ class MarginalMixtureEIM:
         return samples
 
     def update_components(self):
-        fake_samples = self._get_samples()
-        rewards = self._get_reward(fake_samples)
+        samples = self._get_samples()
+        rewards = self._get_reward(samples)
 
-        fake_samples = np.ascontiguousarray([np.array(s, dtype=np.float64) for s in fake_samples])
-        rewards = np.ascontiguousarray([np.array(r, dtype=np.float64) for r in rewards])
+        res_list = []
 
-        res_list = self._gmm_learner.update_components(fake_samples, rewards, self.c.component_kl_bound)
+        for i in range(self._model.num_components):
+            component = self._model.components[i]
+            learner = self._components_learners[i]
 
-        return [(1, res[0], res[1], res[-1]) for res in res_list]
+            old_dist = Gaussian(component.mean, component.covar)
+
+            surrogate = QuadFunc(1e-12, normalize=True, unnormalize_output=False)
+            surrogate.fit(samples[i], rewards[i], None, old_dist.mean, old_dist.chol_covar)
+
+            # This is a numerical thing we did not use in the original paper: We do not undo the output normalization
+            # of the regression, this will yield the same solution but the optimal lagrangian multipliers of the
+            # MORE dual are scaled, so we also need to adapt the offset. This makes optimizing the dual much more
+            # stable and indifferent to initialization
+            learner.eta_offset = 1.0 / surrogate.o_std
+
+            new_mean, new_covar = learner.more_step(self.c.component_kl_bound, -1, component, surrogate)
+            if learner.success:
+                component.update_parameters(new_mean, new_covar)
+                res_list.append((1, component.kl(old_dist), component.entropy(), " "))
+            else:
+                res_list.append((1, 0.0, old_dist.entropy(), "update of component {:d} failed".format(i)))
+
+        return res_list
 
     def update_weight(self):
         fake_samples = self._get_samples()
         rewards = np.mean(self._get_reward(fake_samples), 1)
         rewards = np.ascontiguousarray(np.concatenate(rewards, -1).astype(np.float64))
-        res = self._gmm_learner.update_weights(rewards, self.c.weight_kl_bound)
-        return 1, res[0], res[1], res[-1]
+
+        old_dist = Categorical(self._model.weight_distribution.probabilities)
+
+        # -1 as entropy bound is a dummy as entropy is not constraint
+        new_probabilities = self._weight_learner.reps_step(self.c.weight_kl_bound, -1, old_dist, rewards)
+        if self._weight_learner.success:
+            self._model.weight_distribution.probabilities = new_probabilities
+
+        kl = self._model.weight_distribution.kl(old_dist)
+        entropy = self._model.weight_distribution.entropy()
+        return 1, kl, entropy, " "
+
 

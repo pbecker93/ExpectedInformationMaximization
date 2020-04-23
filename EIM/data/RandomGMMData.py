@@ -1,5 +1,6 @@
 import numpy as np
-from distributions import CppGMM
+from distributions.marginal.GMM import GMM
+
 
 class GMMData:
 
@@ -13,7 +14,7 @@ class GMMData:
         self.means = means
         self.covars = covars
 
-        self.model = CppGMM(self.weights, self.means, self.covars)
+        self.model = GMM(self.weights, self.means, self.covars)
 
         self.train_samples = self.sample(num_train_samples)
         self.test_samples = self.sample(num_test_samples)

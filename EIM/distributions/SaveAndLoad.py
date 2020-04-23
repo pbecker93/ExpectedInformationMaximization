@@ -1,11 +1,11 @@
 import numpy as np
-from distributions import CppGMM
-from distributions.GaussianEMM import GaussianEMM
+from distributions.conditional.GaussianEMM import GaussianEMM
+from distributions.marginal.GMM import GMM
 import os
 
 
 def save_model(model, path: str, filename: str):
-    if isinstance(model, CppGMM):
+    if isinstance(model, GMM):
         save_gmm(model, path, filename)
     elif isinstance(model, GaussianEMM):
         save_gaussian_gmm(model, path, filename)
@@ -18,7 +18,7 @@ def save_gaussian_gmm(model: GaussianEMM, path: str, filename: str):
     model.save(path, filename)
 
 
-def save_gmm(model: CppGMM, path: str, filename: str):
+def save_gmm(model: GMM, path: str, filename: str):
     means = np.stack([c.mean for c in model.components], axis=0)
     covars = np.stack([c.covar for c in model.components], axis=0)
     model_dict = {"weights": model.weight_distribution.p, "means": means, "covars": covars}

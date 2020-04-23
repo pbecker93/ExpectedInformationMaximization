@@ -4,7 +4,7 @@ from recording.modules.SimpleModules import TrainIterationRecMod, ConfigInitialR
 from recording.modules.ModelModules import GMM2DModelRecMod
 from recording.modules.DREModules import DRERecMod
 from recording.modules.UpdateModules import WeightUpdateRecMod, ComponentUpdateRecMod
-from distributions.SaveAndLoad import CppGMM
+from distributions.marginal.GMM import GMM
 
 import numpy as np
 from data.RandomGMMData import GMMData
@@ -19,7 +19,7 @@ target_means = np.array([[0.0, 0.0], [-2.0, 2.0], [2.0, 2.0]])
 #                                    c1                        c2                        c3
 target_covars = np.array([[[0.7, 0.05], [0.05, 0.1]], [[0.1, -0.02], [-0.02, 0.7]], [[0.1, -0.09], [-0.09, 0.7]]])
 
-target_distribution = CppGMM(target_weights, target_means, target_covars)
+target_distribution = GMM(target_weights, target_means, target_covars)
 
 data = GMMData(target_weights, target_means, target_covars, num_train_samples=10000, num_test_samples=5000,
                num_val_samples=2000, seed=0)

@@ -1,9 +1,0 @@
-build/
-_build/
-_generate/
-*.so
-*.py[cod]
-*.egg-info
-.idea
-cmake-build-debug
-pybind11/

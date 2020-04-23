@@ -1,5 +1,5 @@
-from distributions.Softmax import Softmax
-from distributions.ConditionalGaussian import ConditionalGaussian
+from distributions.conditional.Softmax import Softmax
+from distributions.conditional.ConditionalGaussian import ConditionalGaussian
 import numpy as np
 import tensorflow as tf
 import os
